@@ -12,10 +12,9 @@
 #define LINELENGTH 20
 #define SECTIONLENGTH 3
 
-class Parser
-{
-public:
-    void parse(Graph_Vector& graph);
+class Parser {
+  public:
+    void parse(Graph_Vector &graph);
 };
 
 #endif

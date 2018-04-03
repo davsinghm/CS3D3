@@ -9,11 +9,11 @@
 // This inherits from Graph_Vector, it performs a Bellman-Ford search on
 // the graph and updates dist_start and prev appropriately
 
-class BF_Search : public Graph_Vector
-{
-private:
+class BF_Search : public Graph_Vector {
+  private:
     void search(char id);
-protected:
+
+  protected:
     void bf_search(char source);
 };
 

@@ -1,24 +1,22 @@
 #ifndef NODE_HPP
 #define NODE_HPP
 
-#include <iostream>
-#include <vector>
-#include <string>
 #include <cstring>
+#include <iostream>
+#include <string>
+#include <vector>
 
-#include "parser.hpp"
 #include "bf.hpp"
 #include "connection.hpp"
+#include "parser.hpp"
 
 #define SEARCH_LIM 100
-#define HOME_ADDR (char*)"127.0.0.1"
+#define HOME_ADDR (char *)"127.0.0.1"
 
-class Node_Router : public BF_Search, public Connection
-{
-private:
+class Node_Router : public BF_Search, public Connection {
+  private:
     // Routing table node uses to determine how to route packets
-    struct routing_table_node
-    {
+    struct routing_table_node {
         char router;
         unsigned int cost;
         char next_router;
@@ -26,8 +24,7 @@ private:
     };
 
     // Queue of data to be routed
-    struct packet_queue_node
-    {
+    struct packet_queue_node {
         char destination;
         char port[6];
         std::string message;
@@ -46,8 +43,8 @@ private:
     int get_weight(int l, int dest);
     char find_next_router(int l);
     unsigned short find_port(char arg);
-    
-public:
+
+  public:
     Node_Router(char this_router_in);
     ~Node_Router();
     void router();
