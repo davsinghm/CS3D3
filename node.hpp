@@ -14,6 +14,19 @@
 #define SEARCH_LIM 100
 #define HOME_ADDR (char *)"127.0.0.1"
 
+    // Queue of data to be routed
+    struct Packet {
+        char type; //update dv, data etc.
+        char dest_id; //destination node id
+        std::string data; //data, empty when not a data type packet.
+    };
+
+    typedef struct Packet Packet;
+
+
+#define HEADER_FIELD_TYPE_UPDATE_DV '1'
+#define HEADER_FIELD_TYPE_MSG '2'
+
 class NodeRouter : public BellmanFordSearch, public Connection {
   private:
     // Routing table node uses to determine how to route packets
@@ -26,22 +39,12 @@ class NodeRouter : public BellmanFordSearch, public Connection {
 
     typedef struct routing_table_node RoutingTableNode;
 
-    // Queue of data to be routed
-    struct Packet {
-        char type; //update dv, data etc.
-        char dest_id; //destination node id
-        std::string data; //data, empty when not a data type packet.
-    };
-
-    typedef struct Packet Packet;
-
 
     std::vector<RoutingTableNode> routing_table;
     std::vector<Packet> packet_queue;
     RoutingTableNode temp_routing_table;
 
     void handle_packet(Packet &, std::string request);
-    std::string serialize_packet(Packet *);
     // Bellman-Ford algorithm needs to be used first before using this
     void build_table();
     int get_weight(int l, int dest);
@@ -53,6 +56,8 @@ class NodeRouter : public BellmanFordSearch, public Connection {
 
   public:
     char node_id;
+        std::string serialize_packet(Packet *);
+
 
     NodeRouter(char);
     ~NodeRouter();

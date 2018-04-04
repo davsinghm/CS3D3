@@ -1,5 +1,7 @@
 #include "node.hpp"
 
+#define SLEEP_SEC 1
+
 NodeRouter::NodeRouter(char node) {
     // Nodes are parsed, edges are put into a queue
     Parser parser;
@@ -44,8 +46,6 @@ void NodeRouter::run_router() {
     }
 }
 
-#define HEADER_FIELD_TYPE_UPDATE_DV '1'
-#define HEADER_FIELD_TYPE_MSG '2'
 
 /**
  * Message Struct:
@@ -97,6 +97,19 @@ void *adv_thread_func(void *args) {
 
     NodeRouter *node = (NodeRouter *)args;
     std::cout << "started adv thread: " << node->node_id << std::endl;
+
+    for (;;) {
+        Packet packet;
+        packet.type = HEADER_FIELD_TYPE_UPDATE_DV;
+        packet.dest_id = 'A'; //TODO
+        packet.data = "10";
+        int port = 10000;
+
+        std::string message = node->serialize_packet(&packet);
+        node->send_udp(message, HOME_ADDR, std::to_string(port));
+
+        sleep(SLEEP_SEC);
+    }
 
     pthread_exit(NULL);
 }
