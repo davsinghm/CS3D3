@@ -26,7 +26,7 @@ class Connection {
 
     void initial_setup();
 
-  protected:
+  public:
     struct sockaddr_in their_addr;
     size_t addr_len;
     Connection();
