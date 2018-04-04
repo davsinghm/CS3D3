@@ -1,13 +1,13 @@
-#include "bf.hpp"
+#include "bmf.hpp"
 
-void BF_Search::bf_search(char source) {
+void BellmanFordSearch::bmf_search(char source) {
     int l = find_location(source);
     node_list[l].dist_start = 0;
     node_list[l].prev = -2;
     search(source);
 }
 
-void BF_Search::search(char router) {
+void BellmanFordSearch::search(char router) {
     // The algorithm isn't fully implemented
     int l = find_location(router); // location: in std::vector list
 

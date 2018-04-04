@@ -24,7 +24,7 @@
 // then call
 // flush_queue() to populate the edges from struct_vertex.
 
-class Graph_Vector {
+class GraphVector {
   protected:
     // Edges held here
     struct vertex {

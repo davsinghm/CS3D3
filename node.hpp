@@ -6,14 +6,15 @@
 #include <string>
 #include <vector>
 
-#include "bf.hpp"
+#include "bmf.hpp"
 #include "connection.hpp"
 #include "parser.hpp"
+#include<pthread.h>
 
 #define SEARCH_LIM 100
 #define HOME_ADDR (char *)"127.0.0.1"
 
-class Node_Router : public BF_Search, public Connection {
+class NodeRouter : public BellmanFordSearch, public Connection {
   private:
     // Routing table node uses to determine how to route packets
     struct routing_table_node {
@@ -23,31 +24,39 @@ class Node_Router : public BF_Search, public Connection {
         unsigned short next_router_port;
     };
 
+    typedef struct routing_table_node RoutingTableNode;
+
     // Queue of data to be routed
-    struct packet_queue_node {
-        char destination;
-        char port[6];
-        std::string message;
+    struct Packet {
+        char type; //update dv, data etc.
+        char dest_id; //destination node id
+        std::string data; //data, empty when not a data type packet.
     };
 
-    char this_router;
+    typedef struct Packet Packet;
 
-    std::vector<struct routing_table_node> routing_table;
-    std::vector<struct packet_queue_node> packet_queue;
-    struct routing_table_node temp_routing_table;
-    struct packet_queue_node temp_packet_queue;
-    Parser parser;
 
+    std::vector<RoutingTableNode> routing_table;
+    std::vector<Packet> packet_queue;
+    RoutingTableNode temp_routing_table;
+
+    void handle_packet(Packet &, std::string request);
+    std::string serialize_packet(Packet *);
     // Bellman-Ford algorithm needs to be used first before using this
     void build_table();
     int get_weight(int l, int dest);
     char find_next_router(int l);
     unsigned short find_port(char arg);
 
+    pthread_t adv_thread;
+    void run_advertisement_thread();
+
   public:
-    Node_Router(char this_router_in);
-    ~Node_Router();
-    void router();
+    char node_id;
+
+    NodeRouter(char);
+    ~NodeRouter();
+    void run_router();
     bool add_to_queue(std::string arg);
 };
 

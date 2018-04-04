@@ -3,7 +3,7 @@ CXXFLAGS = -pthread -std=c++11
 
 #BEGIN
 
-COMPILE = main.o node.o connection.o parser.o graph_vector.o bf.o
+COMPILE = main.o node.o connection.o parser.o graph_vector.o bmf.o
 main: $(COMPILE)
 	$(CXX) $(COMPILE) -o main
 

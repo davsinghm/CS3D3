@@ -14,7 +14,7 @@
 
 class Parser {
   public:
-    void parse(Graph_Vector &graph);
+    void parse(GraphVector &graph);
 };
 
 #endif

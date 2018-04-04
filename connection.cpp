@@ -73,7 +73,7 @@ int Connection::send_udp(std::string request, std::string address_in,
 
 int Connection::recv_udp(std::string &request) {
     int info;
-    char buffer[BUFFER_LEN];
+    char buffer[BUFFER_LEN]; //for simplicity message is not fragmented.
 
     info = recvfrom(this->sockfd, buffer, (BUFFER_LEN - 1), 0,
                     (struct sockaddr *)&their_addr, (socklen_t *)&addr_len);

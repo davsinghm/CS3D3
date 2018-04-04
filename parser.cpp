@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-void Parser::parse(Graph_Vector &graph) {
+void Parser::parse(GraphVector &graph) {
     char input[LINELENGTH];
     FILE *input_file;
 
