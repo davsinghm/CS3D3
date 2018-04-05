@@ -35,5 +35,6 @@ graph_vector.o: $(GRAPH_VECTOR)
 #CLEAN UP
 
 clean:
+	rm main
 	rm *.o
 	rm *.gch
