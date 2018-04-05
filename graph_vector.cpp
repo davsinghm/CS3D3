@@ -1,5 +1,5 @@
 #include "graph_vector.hpp"
-
+/*
 void GraphVector::add_node(char router, unsigned short port) {
     temp_node.router = router;
     temp_node.port = port;
@@ -77,4 +77,4 @@ void GraphVector::add_ports() {
             node_list[l].port = queue[i].port;
         }
     }
-}
+}*/

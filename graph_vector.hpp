@@ -1,10 +1,10 @@
 #ifndef GRAPH_VECTOR_HPP
 #define GRAPH_VECTOR_HPP
 
-#include <climits>
+/*#include <climits>
 #include <iomanip>
 #include <iostream>
-#include <vector>
+#include <vector>*/
 
 // This class holds the data for the entire graph, edges are held in struct
 // vertex,
@@ -24,7 +24,7 @@
 // then call
 // flush_queue() to populate the edges from struct_vertex.
 
-class GraphVector {
+/*class GraphVector {
   protected:
     // Edges held here
     struct vertex {
@@ -74,6 +74,6 @@ class GraphVector {
     void flush_queue();
 
     void display();
-};
+};*/
 
 #endif

@@ -1,6 +1,6 @@
 #include "bmf.hpp"
 
-void BellmanFordSearch::bmf_search(char source) {
+/*void BellmanFordSearch::bmf_search(char source) {
     int l = find_location(source);
     node_list[l].dist_start = 0;
     node_list[l].prev = -2;
@@ -37,4 +37,4 @@ void BellmanFordSearch::search(char router) {
             }
         }
     }
-}
+}*/

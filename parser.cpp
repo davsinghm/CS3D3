@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-void Parser::parse(GraphVector &graph) {
+/*void Parser::parse(GraphVector &graph) {
     char input[LINELENGTH];
     FILE *input_file;
 
@@ -42,4 +42,4 @@ void Parser::parse(GraphVector &graph) {
     }
 
     fclose(input_file);
-}
+}*/

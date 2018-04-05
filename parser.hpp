@@ -1,7 +1,7 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
-#include <cstdio>
+/*#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -15,6 +15,6 @@
 class Parser {
   public:
     void parse(GraphVector &graph);
-};
+};*/
 
 #endif

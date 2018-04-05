@@ -1,7 +1,7 @@
 #ifndef BELLMAN_FORD_HPP
 #define BELLMAN_FORD_HPP
 
-#include "graph_vector.hpp"
+/*#include "graph_vector.hpp"
 
 #define SEARCH_P 300
 #define SEARCH_LIM 100
@@ -15,6 +15,6 @@ class BellmanFordSearch : public GraphVector {
 
   protected:
     void bmf_search(char source);
-};
+};*/
 
 #endif //BELLMAN_FORD_HPP
