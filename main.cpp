@@ -13,7 +13,7 @@ void run_injecter() {
 
     for (;;) {
         std::cout << "Enter message followed by $: ";
-        buffer = "1Ahi";
+        buffer = "2Bhi";
         temp = "";
         while (temp != "$") {
             std::cin >> temp;

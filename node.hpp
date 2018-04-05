@@ -9,7 +9,9 @@
 #include "bmf.hpp"
 #include "connection.hpp"
 #include "parser.hpp"
-#include<pthread.h>
+#include <pthread.h>
+#include <cstdio>
+#include <cstdlib>
 
 #define SEARCH_LIM 100
 #define HOME_ADDR (char *)"127.0.0.1"
@@ -18,11 +20,23 @@
     struct Packet {
         char type; //update dv, data etc.
         char dest_id; //destination node id
+        char src_id; //src node id
         std::string data; //data, empty when not a data type packet.
     };
 
     typedef struct Packet Packet;
 
+    struct RoutingTableNode {
+        bool is_neighbor;
+        char router_id;
+        unsigned int cost;
+        unsigned int port;
+        char ref_router_id; //id of neighbor router through this distant node has min cost.
+        //char next_router;
+        //unsigned short next_router_port;
+    };
+
+    typedef struct RoutingTableNode RoutingTableNode;
 
 #define HEADER_FIELD_TYPE_UPDATE_DV '1'
 #define HEADER_FIELD_TYPE_MSG '2'
@@ -30,19 +44,8 @@
 class NodeRouter : public BellmanFordSearch, public Connection {
   private:
     // Routing table node uses to determine how to route packets
-    struct routing_table_node {
-        char router;
-        unsigned int cost;
-        char next_router;
-        unsigned short next_router_port;
-    };
 
-    typedef struct routing_table_node RoutingTableNode;
-
-
-    std::vector<RoutingTableNode> routing_table;
     std::vector<Packet> packet_queue;
-    RoutingTableNode temp_routing_table;
 
     void handle_packet(Packet &, std::string request);
     // Bellman-Ford algorithm needs to be used first before using this
@@ -53,11 +56,15 @@ class NodeRouter : public BellmanFordSearch, public Connection {
 
     pthread_t adv_thread;
     void run_advertisement_thread();
+    void parse_file(char* filename);
 
   public:
-    char node_id;
-        std::string serialize_packet(Packet *);
+    pthread_mutex_t mutex_routing_table = PTHREAD_MUTEX_INITIALIZER;
 
+    std::vector<RoutingTableNode> routing_table;
+    char node_id;
+    int port;
+    std::string serialize_packet(Packet *);
 
     NodeRouter(char);
     ~NodeRouter();
