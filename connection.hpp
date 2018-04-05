@@ -33,8 +33,11 @@ class Connection {
     Connection();
     ~Connection();
     bool setup_connection(std::string address, std::string port);
+    bool setup_connection(std::string address, int port);
     int send_udp(std::string request, std::string address_in,
                  std::string port_in);
+    int send_udp(std::string request, std::string address_in,
+                 int port_in);
     int recv_udp(std::string &request);
 };
 

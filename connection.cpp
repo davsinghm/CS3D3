@@ -11,6 +11,10 @@ void Connection::initial_setup() {
 
 Connection::~Connection() {}
 
+bool Connection::setup_connection(std::string address, int port) {
+    return setup_connection(address, std::to_string(port));
+}
+
 bool Connection::setup_connection(std::string address, std::string port) {
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd == -1) {
@@ -33,6 +37,11 @@ bool Connection::setup_connection(std::string address, std::string port) {
     freeaddrinfo(setup);
 
     return true;
+}
+
+int Connection::send_udp(std::string request, std::string address_in,
+                         int port_in) {
+    return send_udp(request, address_in, std::to_string(port_in));
 }
 
 int Connection::send_udp(std::string request, std::string address_in,

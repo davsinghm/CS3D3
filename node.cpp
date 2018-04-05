@@ -10,7 +10,7 @@ NodeRouter::NodeRouter(char node) {
     // Build routing table based on above function results on graph
     build_table();
     // Bind to router's port
-    connection.setup_connection(HOME_ADDR, std::to_string(this->port));
+    connection.setup_connection(HOME_ADDR, this->port);
 /*
     for (int i = 0; i < routing_table.size(); i++) {
         std::cout << routing_table[i].router_id << " "
@@ -154,7 +154,7 @@ goto_forward:
     std::cout << "forwarding the packet to " << routing_table.at(index).port << std::endl;
 
     std::string message = serialize_packet(&packet);
-    connection.send_udp(message, HOME_ADDR, std::to_string(routing_table.at(index).port));
+    connection.send_udp(message, HOME_ADDR, routing_table.at(index).port);
 }
 
 /**
@@ -237,7 +237,7 @@ void *adv_thread_func(void *args) {
                 packet.dest_id = rtn_neighbor.router_id; //neighbor is dest
 
                 std::string message = node->serialize_packet(&packet);
-                node->connection.send_udp(message, HOME_ADDR, std::to_string(rtn_neighbor.port)); //send to neighbor (tc port)
+                node->connection.send_udp(message, HOME_ADDR, rtn_neighbor.port); //send to neighbor (tc port)
             }
         }
 
