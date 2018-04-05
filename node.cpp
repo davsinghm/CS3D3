@@ -20,10 +20,9 @@ NodeRouter::NodeRouter(char node) {
                   << std::endl;
     }*/
 
-    run_advertisement_thread();
+    print_routing_table();
 
-    // Start routing
-    run_router();
+    run_advertisement_thread();
 }
 
 NodeRouter::~NodeRouter() {
@@ -40,23 +39,24 @@ void NodeRouter::run_router() {
     }
 }
 
-void print_routing_table(NodeRouter *node) {
+void NodeRouter::print_routing_table() {
     std::cout << "Routing Table:" << std::endl;
-    for (int i = 0; i < node->routing_table.size(); i++) {
-        std::cout << node->routing_table[i].router_id << " "
-                  << node->routing_table[i].cost << " ";
+    for (int i = 0; i < routing_table.size(); i++) {
+        std::cout << routing_table[i].router_id << " "
+                  << routing_table[i].cost << " ";
 
-        if (node->routing_table[i].is_neighbor)
-            std::cout << std::to_string(node->routing_table[i].port);
+        if (routing_table[i].is_neighbor)
+            std::cout << std::to_string(routing_table[i].port);
         else {
             std::cout << "through "; 
-            std::cout << node->routing_table[i].ref_router_id;
+            std::cout << routing_table[i].ref_router_id;
         }
         std::cout << std::endl;
     }
 }
 
-void update_dv_in_table(NodeRouter *node, Packet *packet) {
+//TODO do this aync?
+void NodeRouter::update_dv_in_table(Packet *packet) {
     int new_cost;
     char to_router_id;
     bool has_updated_table = false; //if added or updated the entry, used for printing
@@ -66,12 +66,12 @@ void update_dv_in_table(NodeRouter *node, Packet *packet) {
     new_cost = atoi((char *)cost_str.c_str());
 
     //trying to update routing table.
-    pthread_mutex_lock(&node->mutex_routing_table); //lock it
+    pthread_mutex_lock(&mutex_routing_table); //lock it
 
     //TODO can optimize if we sum the cost of this link in the node that's sending the DV. then we don't need to find the src (which is neighbor) in table
     RoutingTableNode *src_rtn = NULL; //src, neighbor from where dv came
-    for (int i = 0; i < node->routing_table.size(); i++) {
-        RoutingTableNode &rtn = node->routing_table.at(i);
+    for (int i = 0; i < routing_table.size(); i++) {
+        RoutingTableNode &rtn = routing_table.at(i);
         if (rtn.router_id == packet->src_id) {
             src_rtn = &rtn;
         }
@@ -80,8 +80,8 @@ void update_dv_in_table(NodeRouter *node, Packet *packet) {
     //std::cout << "new cost to " << to_router_id << " is " << cost_str << " from " << src_rtn->router_id << std::endl;
 
     bool has_node = false; //table has node info, it's updated instead of adding new one
-    for (int i = 0; i < node->routing_table.size(); i++) {
-        RoutingTableNode &rtn = node->routing_table.at(i);
+    for (int i = 0; i < routing_table.size(); i++) {
+        RoutingTableNode &rtn = routing_table.at(i);
         if (rtn.router_id == to_router_id) {
             has_node = true;
 
@@ -96,29 +96,29 @@ void update_dv_in_table(NodeRouter *node, Packet *packet) {
     }
 
     //add if it's a distant router.
-    if (!has_node && to_router_id != node->node_id) {
+    if (!has_node && to_router_id != node_id) {
         RoutingTableNode rtn;
         rtn.is_neighbor = false;
         rtn.router_id = to_router_id;
         rtn.cost = new_cost + src_rtn->cost;
         rtn.ref_router_id = packet->src_id;
         rtn.port = 0;
-        node->routing_table.push_back(rtn);
+        routing_table.push_back(rtn);
 
         has_updated_table = true;
     }
 
-    pthread_mutex_unlock(&node->mutex_routing_table); //unlock it
+    pthread_mutex_unlock(&mutex_routing_table); //unlock it
 
     if (has_updated_table)
-        print_routing_table(node);
+        print_routing_table();
 }
 
-void forward_message(NodeRouter *node, Packet &packet) {
+void NodeRouter::forward_message(Packet &packet) {
     int index = -1;
     int ref_router_id = -1;
-    for (int i = 0; i < node->routing_table.size(); i++) {
-        RoutingTableNode &rtn = node->routing_table.at(i);
+    for (int i = 0; i < routing_table.size(); i++) {
+        RoutingTableNode &rtn = routing_table.at(i);
         if (rtn.is_neighbor) {
             if (rtn.router_id == packet.dest_id) {
                 index = i;
@@ -137,8 +137,8 @@ void forward_message(NodeRouter *node, Packet &packet) {
         return;
     }
 
-    for (int i = 0; i < node->routing_table.size(); i++) {
-        RoutingTableNode &rtn = node->routing_table.at(i);
+    for (int i = 0; i < routing_table.size(); i++) {
+        RoutingTableNode &rtn = routing_table.at(i);
         if (rtn.is_neighbor)
             continue;
 
@@ -151,10 +151,10 @@ void forward_message(NodeRouter *node, Packet &packet) {
     return;
 
 goto_forward:
-    std::cout << "forwarding the packet to " << node->routing_table.at(index).port << std::endl;
+    std::cout << "forwarding the packet to " << routing_table.at(index).port << std::endl;
 
-    std::string message = node->serialize_packet(&packet);
-    node->connection.send_udp(message, HOME_ADDR, std::to_string(node->routing_table.at(index).port));
+    std::string message = serialize_packet(&packet);
+    connection.send_udp(message, HOME_ADDR, std::to_string(routing_table.at(index).port));
 }
 
 /**
@@ -187,12 +187,12 @@ void NodeRouter::handle_packet(Packet &packet, std::string message) {
         //message = packet_queue.back().dest_id;
         //message = message + " " + packet_queue.back().message;
         std::cout << "FORWARDING MESSSAGE" << std::endl;
-        forward_message(this, packet);
+        forward_message(packet);
     } else {
 
         switch (packet.type) {
             case HEADER_FIELD_TYPE_UPDATE_DV:
-                update_dv_in_table(this, &packet);
+                update_dv_in_table(&packet);
                 break;
             case HEADER_FIELD_TYPE_MSG:
                 std::cout << "Final Destination: " << message << std::endl;
@@ -300,7 +300,7 @@ std::string NodeRouter::serialize_packet(Packet *packet) {
     return 0;
 }*/
 
-
+//used to find ports of the neighbors nodes while initializing
 void NodeRouter::parse_file(char * filename) {
     char input[LINELENGTH];
     FILE *input_file;

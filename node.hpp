@@ -51,12 +51,14 @@ class NodeRouter {
 
     std::vector<Packet> packet_queue;
 
-    void handle_packet(Packet &, std::string request);
-    // Bellman-Ford algorithm needs to be used first before using this
+    void handle_packet(Packet&, std::string);
     void build_table();
-    int get_weight(int l, int dest);
-    char find_next_router(int l);
-    unsigned short find_port(char arg);
+    void print_routing_table();
+    void update_dv_in_table(Packet *);
+    //int get_weight(int l, int dest);
+    void forward_message(Packet &);
+    //char find_next_router(int l);
+    //unsigned short find_port(char arg);
 
     pthread_t adv_thread;
     void run_advertisement_thread();
@@ -73,8 +75,8 @@ class NodeRouter {
 
     NodeRouter(char);
     ~NodeRouter();
-    void run_router();
-    bool add_to_queue(std::string arg);
+    void run_router(); //start routing receiving/sending.
+    //bool add_to_queue(std::string arg);
 };
 
 #endif
