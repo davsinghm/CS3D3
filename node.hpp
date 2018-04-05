@@ -41,7 +41,7 @@
 #define HEADER_FIELD_TYPE_UPDATE_DV '1'
 #define HEADER_FIELD_TYPE_MSG '2'
 
-class NodeRouter : public BellmanFordSearch, public Connection {
+class NodeRouter : public Connection {
   private:
     // Routing table node uses to determine how to route packets
 
