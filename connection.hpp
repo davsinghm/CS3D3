@@ -24,11 +24,12 @@ class Connection {
     int sockfd;
     std::size_t from_len;
 
+    struct sockaddr_in their_addr;
+    size_t addr_len;
+
     void initial_setup();
 
   public:
-    struct sockaddr_in their_addr;
-    size_t addr_len;
     Connection();
     ~Connection();
     bool setup_connection(std::string address, std::string port);
