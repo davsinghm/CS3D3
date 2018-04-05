@@ -1,12 +1,5 @@
 #include "node.hpp"
 
-#include "graph_vector.hpp"
-
-#define SLEEP_SEC 1
-#define TOPOLOGY_FILE (char*)"topology.dat"
-#define LINELENGTH 20
-#define SECTIONLENGTH 3
-
 NodeRouter::NodeRouter(char node) {
     // When nodes are intialised, vertices are added
     //flush_queue();
@@ -17,9 +10,7 @@ NodeRouter::NodeRouter(char node) {
     // Build routing table based on above function results on graph
     build_table();
     // Bind to router's port
-    setup_connection(
-        HOME_ADDR,
-        std::to_string(this->port));
+    connection.setup_connection(HOME_ADDR, std::to_string(this->port));
 /*
     for (int i = 0; i < routing_table.size(); i++) {
         std::cout << routing_table[i].router_id << " "
@@ -42,7 +33,7 @@ NodeRouter::~NodeRouter() {
 void NodeRouter::run_router() {
     std::string message;
     for (;;) {
-        recv_udp(message);
+        connection.recv_udp(message);
 
         Packet packet;
         handle_packet(packet, message);
@@ -50,6 +41,7 @@ void NodeRouter::run_router() {
 }
 
 void print_routing_table(NodeRouter *node) {
+    std::cout << "Routing Table:" << std::endl;
     for (int i = 0; i < node->routing_table.size(); i++) {
         std::cout << node->routing_table[i].router_id << " "
                   << node->routing_table[i].cost << " ";
@@ -162,7 +154,7 @@ goto_forward:
     std::cout << "forwarding the packet to " << node->routing_table.at(index).port << std::endl;
 
     std::string message = node->serialize_packet(&packet);
-    node->send_udp(message, HOME_ADDR, std::to_string(node->routing_table.at(index).port));
+    node->connection.send_udp(message, HOME_ADDR, std::to_string(node->routing_table.at(index).port));
 }
 
 /**
@@ -245,7 +237,7 @@ void *adv_thread_func(void *args) {
                 packet.dest_id = rtn_neighbor.router_id; //neighbor is dest
 
                 std::string message = node->serialize_packet(&packet);
-                node->send_udp(message, HOME_ADDR, std::to_string(rtn_neighbor.port)); //send to neighbor (tc port)
+                node->connection.send_udp(message, HOME_ADDR, std::to_string(rtn_neighbor.port)); //send to neighbor (tc port)
             }
         }
 
@@ -407,7 +399,7 @@ void NodeRouter::build_table() {
     }*/
 }
 
-char NodeRouter::find_next_router(int l) {
+/*char NodeRouter::find_next_router(int l) {
     int count = 0;
     while (count < SEARCH_LIM) {
         if (node_list[node_list[l].prev].router == node_id) {
@@ -422,4 +414,4 @@ char NodeRouter::find_next_router(int l) {
     exit(1);
 
     return '\0';
-}
+}*/

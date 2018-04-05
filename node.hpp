@@ -15,33 +15,37 @@
 
 #define SEARCH_LIM 100
 #define HOME_ADDR (char *)"127.0.0.1"
+#define SLEEP_SEC 1 //time to sleep between each update
+#define TOPOLOGY_FILE (char*)"topology.dat"
+#define LINELENGTH 20
+#define SECTIONLENGTH 3
 
-    // Queue of data to be routed
-    struct Packet {
-        char type; //update dv, data etc.
-        char dest_id; //destination node id
-        char src_id; //src node id
-        std::string data; //data, empty when not a data type packet.
-    };
+// Queue of data to be routed
+struct Packet {
+    char type; //update dv, data etc.
+    char dest_id; //destination node id
+    char src_id; //src node id
+    std::string data; //data, empty when not a data type packet.
+};
 
-    typedef struct Packet Packet;
+typedef struct Packet Packet;
 
-    struct RoutingTableNode {
-        bool is_neighbor;
-        char router_id;
-        unsigned int cost;
-        unsigned int port;
-        char ref_router_id; //id of neighbor router through this distant node has min cost.
-        //char next_router;
-        //unsigned short next_router_port;
-    };
+struct RoutingTableNode {
+    bool is_neighbor;
+    char router_id;
+    unsigned int cost;
+    unsigned int port;
+    char ref_router_id; //id of neighbor router through this distant node has min cost.
+    //char next_router;
+    //unsigned short next_router_port;
+};
 
-    typedef struct RoutingTableNode RoutingTableNode;
+typedef struct RoutingTableNode RoutingTableNode;
 
 #define HEADER_FIELD_TYPE_UPDATE_DV '1'
 #define HEADER_FIELD_TYPE_MSG '2'
 
-class NodeRouter : public Connection {
+class NodeRouter {
   private:
     // Routing table node uses to determine how to route packets
 
@@ -59,6 +63,7 @@ class NodeRouter : public Connection {
     void parse_file(char* filename);
 
   public:
+    Connection connection;
     pthread_mutex_t mutex_routing_table = PTHREAD_MUTEX_INITIALIZER;
 
     std::vector<RoutingTableNode> routing_table;
