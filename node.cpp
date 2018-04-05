@@ -178,7 +178,7 @@ void NodeRouter::handle_packet(Packet &packet, std::string message) {
     //std::cout << "Received: " << message << std::endl;
 
     if (message.length() < 2) {
-        std::cout << "Invalid Packet Received. Message Length(): " << message.length() << std::endl;
+        std::cerr << "Invalid Packet Received. Message Length(): " << message.length() << std::endl;
         return;
     }
     //deserialize packet first
