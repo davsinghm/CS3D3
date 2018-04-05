@@ -52,10 +52,15 @@ void NodeRouter::run_router() {
 void print_routing_table(NodeRouter *node) {
     for (int i = 0; i < node->routing_table.size(); i++) {
         std::cout << node->routing_table[i].router_id << " "
-                  << node->routing_table[i].cost << " "
-                  << node->routing_table[i].port << " "
-                  //<< routing_table[i].next_router_port 
-                  << std::endl;
+                  << node->routing_table[i].cost << " ";
+
+        if (node->routing_table[i].is_neighbor)
+            std::cout << std::to_string(node->routing_table[i].port);
+        else {
+            std::cout << "through "; 
+            std::cout << node->routing_table[i].ref_router_id;
+        }
+        std::cout << std::endl;
     }
 }
 
@@ -69,10 +74,10 @@ void update_dv_in_table(NodeRouter *node, Packet *packet) {
     std::string cost_str = packet->data.substr(1);
     new_cost = atoi((char *)cost_str.c_str());
 
-    //updating routing table.
+    //trying to update routing table.
     pthread_mutex_lock(&node->mutex_routing_table); //lock it
 
-    RoutingTableNode *src_rtn;
+    RoutingTableNode *src_rtn = NULL; //src, neighbor from where dv came
     for (int i = 0; i < node->routing_table.size(); i++) {
         RoutingTableNode &rtn = node->routing_table.at(i);
         if (rtn.router_id == packet->src_id) {
@@ -86,13 +91,14 @@ void update_dv_in_table(NodeRouter *node, Packet *packet) {
     for (int i = 0; i < node->routing_table.size(); i++) {
         RoutingTableNode &rtn = node->routing_table.at(i);
         if (rtn.router_id == to_router_id) {
+            found = true;
+
             if (src_rtn->cost + new_cost < rtn.cost) {
                 std::cout << "updating new cost to " << src_rtn->cost + new_cost << " of " << to_router_id << " in table of " << rtn.router_id << ". Received from " << src_rtn->router_id << std::endl;
                 rtn.cost = src_rtn->cost + new_cost;
                 rtn.ref_router_id = src_rtn->router_id;
                 break;
             }
-            found = true;
         }
     }
 
@@ -102,7 +108,6 @@ void update_dv_in_table(NodeRouter *node, Packet *packet) {
         rtn.is_neighbor = false;
         rtn.router_id = to_router_id;
         rtn.cost = new_cost + src_rtn->cost;
-        //rtn.cost = src_rtn//port will be not used, as ref_router_id is used
         rtn.ref_router_id = packet->src_id;
         rtn.port = 0;
         node->routing_table.push_back(rtn);
@@ -160,9 +165,9 @@ goto_forward:
  * Message Struct:
  * ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  * first byte: type (update dv, msg)
- * final destination node
- * src node node
- * rest of it is data, interpreted based on first byte.
+ * second byte: dest_id
+ * third byte: src_id
+ * rest: data
  * ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  */
 void NodeRouter::handle_packet(Packet &packet, std::string message) {
