@@ -44,7 +44,9 @@ int main(int argc, char *argv[]) {
 
     if (argv[1][0] == 'H')
         run_injecter();
-    else
+    else {
         NodeRouter node(*(argv[1]));
+        node.run_router();
+    }
     return 0;
 }
