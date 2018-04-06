@@ -6,21 +6,24 @@ bool DEBUG;
 #define NODE_H_PORT (char *)"10006"
 
 void run_injecter() {
-    std::cout << "*** Starting Server Thread ***" << std::endl;
     std::string buffer, temp;
     std::string server, port = "10000";
     Connection connection;
 
     connection.setup_connection((char *)"127.0.0.1", NODE_H_PORT);
 
-    for (;;) {
-        std::cout << "Enter message followed by $: ";
+//    for (;;) {
+        //std::cout << "Sending message.";
+
+        //std::cout << "Enter message followed by $: ";
         buffer = "2DHThe quick brown fox jumps over the lazy dog.";
-        temp = "";
+        buffer += " on ";
+        buffer += std::to_string(std::time(0));
+        /*temp = "";
         while (temp != "$") {
             std::cin >> temp;
             buffer = buffer + temp + " ";
-        }
+        }*/
 //        std::cout << "Enter server: ";
 //        std::cin >> server;
 //        server = server + buffer + " ";
@@ -30,9 +33,8 @@ void run_injecter() {
 
         connection.send_udp(buffer.c_str(), (char *)"127.0.0.1",
                             port.c_str());
-    }
-
-    std::cout << "*** Exiting Server Thread ***" << std::endl;
+        exit(0);
+   // }
 }
 
 int main(int argc, char *argv[]) {

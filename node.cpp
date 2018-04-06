@@ -46,8 +46,10 @@ void NodeRouter::print_routing_table() {
         std::cout << routing_table[i].router_id << " "
                   << routing_table[i].cost << " ";
 
-        if (routing_table[i].is_neighbor)
-            std::cout << std::to_string(routing_table[i].port);
+        if (routing_table[i].is_neighbor) {
+            std::cout << routing_table[i].port << " "
+                      << "(Last Received: " << (std::time(0) - routing_table[i].last_update) << " sec ago)";
+        }
         else {
             std::cout << "through "; 
             std::cout << routing_table[i].ref_router_id;
@@ -75,6 +77,12 @@ void NodeRouter::update_dv_in_table(Packet *packet) {
         RoutingTableNode &rtn = routing_table.at(i);
         if (rtn.router_id == packet->src_id) {
             src_rtn = &rtn;
+
+            //if (std::time(0) - rtn.last_update > SLEEP_SEC + 1 && std::time(0) - rtn.last_update < SLEEP_SEC + 2)
+             //   has_updated_table = true; //if router was dead before
+
+            //update the last_update timestamp
+            rtn.last_update = std::time(0);
         }
     }
 
@@ -86,7 +94,7 @@ void NodeRouter::update_dv_in_table(Packet *packet) {
         if (rtn.router_id == to_router_id) {
             has_node = true;
 
-            if (src_rtn->cost + new_cost < rtn.cost) {
+            if (/*(src_rtn->router_id == rtn.ref_router_id && src_rtn->cost + new_cost != rtn.cost) || */src_rtn->cost + new_cost < rtn.cost) {
                 if (DEBUG)
                     std::cout << "Updating new cost to " << src_rtn->cost + new_cost << " of " << to_router_id << " in table of " << rtn.router_id << ". Received from " << src_rtn->router_id << std::endl;
                 rtn.cost = src_rtn->cost + new_cost;
@@ -135,7 +143,7 @@ void NodeRouter::forward_message(Packet &packet) {
                 goto goto_forward;
             }
 
-            if (neighbor_min_cost > rtn.cost) {
+            if (neighbor_min_cost > rtn.cost && (std::time(0) - rtn.last_update) <= SLEEP_SEC) {
                 neighbor_min_cost_i = i;
                 neighbor_min_cost = rtn.cost;
             }
@@ -152,10 +160,10 @@ void NodeRouter::forward_message(Packet &packet) {
             RoutingTableNode &fwd_rtn = routing_table.at(neighbor_min_cost_i);
 
             if (DEBUG)
-                std::cout << "Couldn't find distant router " <<  packet.dest_id << " in table. Greedily selecting alive neighbor: " << fwd_rtn.router_id << std::endl;
+                std::cout << "TODO Couldn't find distant router " <<  packet.dest_id << " in table. Greedily selecting alive neighbor: " << fwd_rtn.router_id << std::endl;
 
-            std::string message = serialize_packet(&packet);
-            connection.send_udp(message, HOME_ADDR, fwd_rtn.port);
+            //std::string message = serialize_packet(&packet);
+            //connection.send_udp(message, HOME_ADDR, fwd_rtn.port);
             return;
         }
     }
@@ -173,7 +181,7 @@ void NodeRouter::forward_message(Packet &packet) {
     }
 
     if (DEBUG)
-        std::cout << "DEBUG: Can't forward the message, This shouldn't ever reach." << std::endl;
+        std::cout << "DEBUG: Can't forward the message. No alive neighbor found. Packet dropped." << std::endl;
     return;
 
 goto_forward:
@@ -240,6 +248,7 @@ void *adv_thread_func(void *args) {
 //    std::cout << "started adv thread" << std::endl;
 
     NodeRouter *node = (NodeRouter *)args;
+    bool p_rt = false;
   //  std::cout << "started adv thread: " << node->node_id << std::endl;
 
     //this should send whole routing table to its neighbors
@@ -250,18 +259,36 @@ void *adv_thread_func(void *args) {
             RoutingTableNode rtn_neighbor = node->routing_table[i];
             if (!rtn_neighbor.is_neighbor)
                 continue; //don't send to distant router, their neighbors will send their info
+            bool is_rtn_neighbor_dead = std::time(0) - rtn_neighbor.last_update > SLEEP_SEC;
+
+            if (is_rtn_neighbor_dead) {
+                if (DEBUG)
+                    std::cout << "Neighbor " << rtn_neighbor.router_id << " is dead. Last Update: " << (std::time(0) - rtn_neighbor.last_update) << " sec ago" << std::endl;
+            }
 
             for (int j = 0; j < node->routing_table.size(); j++) {
-                RoutingTableNode rtn = node->routing_table[j];
+                RoutingTableNode &rtn = node->routing_table.at(j);
                 //if (rtn.is_neighbor)
-                //    continue; 
+                //    continue;
+
+                //updates all distant router's cost which were sent through dead neighbor router.
+                if (!rtn.is_neighbor && rtn.ref_router_id == rtn_neighbor.router_id && is_rtn_neighbor_dead) {
+                    p_rt = p_rt || rtn.cost != INT_MAX; //print routing table if updated, and once
+                    rtn.cost = INT_MAX;
+                    rtn.ref_router_id = 'Z';
+                }
 
                 Packet packet;
                 packet.type = HEADER_FIELD_TYPE_UPDATE_DV;
 
                 //packet.data = std::to_string(rtn.router_id);// ...to reach the router
                 packet.data = ((char)rtn.router_id);
-                packet.data += std::to_string(rtn.cost); //cost of link...
+
+                //this tells the rtn_neighbor that other neighbor rtn is dead
+                if (rtn.is_neighbor && /*is_dead: */std::time(0) - rtn.last_update > SLEEP_SEC)
+                    packet.data += std::to_string(INT_MAX);
+                else
+                    packet.data += std::to_string(rtn.cost); //cost of link...
                 //std::cout << "sending to " << packet.dest_id << " DATA: " << packet.data << " from " << packet.src_id << std::endl;
 
                 packet.src_id = node->node_id; //this router
@@ -271,6 +298,9 @@ void *adv_thread_func(void *args) {
                 node->connection.send_udp(message, HOME_ADDR, rtn_neighbor.port); //send to neighbor (tc port)
             }
         }
+
+        if (p_rt)
+            node->print_routing_table();
 
         pthread_mutex_unlock(&node->mutex_routing_table);
 
@@ -385,6 +415,7 @@ void NodeRouter::build_table(char *filename) {
             rtn.cost = weight;
             rtn.port = port;
             rtn.is_neighbor = true;
+            rtn.last_update = std::time(0) - 1 - SLEEP_SEC; //0 means past, way > than min time delay
 
             routing_table.push_back(rtn);
         }

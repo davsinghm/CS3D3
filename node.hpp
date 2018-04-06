@@ -39,6 +39,7 @@ struct RoutingTableNode {
     char ref_router_id; //id of neighbor router through this distant node has min cost.
     //char next_router;
     //unsigned short next_router_port;
+    long last_update; //timestamp of when last DV update came from neighbor. used for checking if it's alive
 };
 
 typedef struct RoutingTableNode RoutingTableNode;
@@ -54,7 +55,6 @@ class NodeRouter {
 
     void handle_packet(Packet&, std::string);
     void build_table(char *filename);
-    void print_routing_table();
     void update_dv_in_table(Packet *);
     //int get_weight(int l, int dest);
     void forward_message(Packet &);
@@ -72,6 +72,7 @@ class NodeRouter {
     pthread_mutex_t mutex_routing_table = PTHREAD_MUTEX_INITIALIZER;
     std::vector<RoutingTableNode> routing_table;
 
+    void print_routing_table();
     std::string serialize_packet(Packet *);
     void run_router(); //start routing receiving/sending.
 
