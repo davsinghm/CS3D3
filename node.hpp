@@ -18,7 +18,6 @@
 #define SLEEP_SEC 1 //time to sleep between each update
 #define TOPOLOGY_FILE (char*)"topology.dat"
 #define LINELENGTH 20
-#define SECTIONLENGTH 3
 
 // Queue of data to be routed
 struct Packet {
@@ -52,7 +51,7 @@ class NodeRouter {
     std::vector<Packet> packet_queue;
 
     void handle_packet(Packet&, std::string);
-    void build_table();
+    void build_table(char *filename);
     void print_routing_table();
     void update_dv_in_table(Packet *);
     //int get_weight(int l, int dest);
@@ -62,20 +61,20 @@ class NodeRouter {
 
     pthread_t adv_thread;
     void run_advertisement_thread();
-    void parse_file(char* filename);
 
   public:
     Connection connection;
-    pthread_mutex_t mutex_routing_table = PTHREAD_MUTEX_INITIALIZER;
-
-    std::vector<RoutingTableNode> routing_table;
     char node_id;
     int port;
+
+    pthread_mutex_t mutex_routing_table = PTHREAD_MUTEX_INITIALIZER;
+    std::vector<RoutingTableNode> routing_table;
+
     std::string serialize_packet(Packet *);
+    void run_router(); //start routing receiving/sending.
 
     NodeRouter(char);
     ~NodeRouter();
-    void run_router(); //start routing receiving/sending.
     //bool add_to_queue(std::string arg);
 };
 

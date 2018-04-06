@@ -8,7 +8,7 @@ NodeRouter::NodeRouter(char node) {
     // Perform Bellman-Ford algorithm on graph
     //bmf_search(node_id);
     // Build routing table based on above function results on graph
-    build_table();
+    build_table(TOPOLOGY_FILE);
     // Bind to router's port
     connection.setup_connection(HOME_ADDR, this->port);
 /*
@@ -20,6 +20,7 @@ NodeRouter::NodeRouter(char node) {
                   << std::endl;
     }*/
 
+    std::cout << "Initial ";
     print_routing_table();
 
     run_advertisement_thread();
@@ -114,9 +115,12 @@ void NodeRouter::update_dv_in_table(Packet *packet) {
         print_routing_table();
 }
 
+//TODO lock the mutex?
 void NodeRouter::forward_message(Packet &packet) {
+
     int index = -1;
     int ref_router_id = -1;
+    std::cout << "packet destination: " << packet.dest_id << std::endl;
     for (int i = 0; i < routing_table.size(); i++) {
         RoutingTableNode &rtn = routing_table.at(i);
         if (rtn.is_neighbor) {
@@ -139,7 +143,7 @@ void NodeRouter::forward_message(Packet &packet) {
 
     for (int i = 0; i < routing_table.size(); i++) {
         RoutingTableNode &rtn = routing_table.at(i);
-        if (rtn.is_neighbor)
+        if (!rtn.is_neighbor)
             continue;
 
         if (rtn.router_id == ref_router_id) {
@@ -148,6 +152,7 @@ void NodeRouter::forward_message(Packet &packet) {
         }
     }
 
+    std::cout << "can't forward the message, couldn't find anything in table" << std::endl;
     return;
 
 goto_forward:
@@ -183,11 +188,14 @@ void NodeRouter::handle_packet(Packet &packet, std::string message) {
     //std::cout << "src_id: " << packet.src_id << std::endl;
     //std::cout << "data: " << packet.data << std::endl;
 
+    //TODO put the forwarding packet in queue and send async from listening/recv thread
     if (packet.dest_id != node_id) {
         //message = packet_queue.back().dest_id;
         //message = message + " " + packet_queue.back().message;
         std::cout << "FORWARDING MESSSAGE" << std::endl;
+        pthread_mutex_lock(&mutex_routing_table); //TODO move to more approp place.
         forward_message(packet);
+        pthread_mutex_unlock(&mutex_routing_table);
     } else {
 
         switch (packet.type) {
@@ -206,10 +214,10 @@ void NodeRouter::handle_packet(Packet &packet, std::string message) {
 }
 
 void *adv_thread_func(void *args) {
-    std::cout << "started adv thread" << std::endl;
+//    std::cout << "started adv thread" << std::endl;
 
     NodeRouter *node = (NodeRouter *)args;
-    std::cout << "started adv thread: " << node->node_id << std::endl;
+  //  std::cout << "started adv thread: " << node->node_id << std::endl;
 
     //this should send whole routing table to its neighbors
     for (;;) {
@@ -301,7 +309,12 @@ std::string NodeRouter::serialize_packet(Packet *packet) {
 }*/
 
 //used to find ports of the neighbors nodes while initializing
-void NodeRouter::parse_file(char * filename) {
+/*void NodeRouter::parse_file(char *filename) {
+
+}
+*/
+//build initial table with known neighbors
+void NodeRouter::build_table(char *filename) {
     char input[LINELENGTH];
     FILE *input_file;
 
@@ -309,12 +322,12 @@ void NodeRouter::parse_file(char * filename) {
     char edge;
     unsigned short port;
     unsigned int weight;
+    char token[128];
 
     input_file = fopen(filename, "r");
-    char token[SECTIONLENGTH];
 
     if (!input_file) {
-        perror("File error");
+        std::cerr << "Unable to open file: " << filename << std::endl;
     } else {
         while (!feof(input_file)) {
             fgets(input, LINELENGTH, (FILE *)input_file);
@@ -350,20 +363,11 @@ void NodeRouter::parse_file(char * filename) {
             rtn.port = port;
             rtn.is_neighbor = true;
 
-            std::cout << "push " << rtn.router_id << std::endl;
             routing_table.push_back(rtn);
         }
     }
 
     fclose(input_file);
-}
-
-//build initial table with known neighbors
-void NodeRouter::build_table() {
-
-    std::cout << "build table";
-
-    parse_file(TOPOLOGY_FILE);
 
     /*RoutingTableNode temp_routing_table;
 
