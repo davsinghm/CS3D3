@@ -87,7 +87,8 @@ void NodeRouter::update_dv_in_table(Packet *packet) {
             has_node = true;
 
             if (src_rtn->cost + new_cost < rtn.cost) {
-                std::cout << "updating new cost to " << src_rtn->cost + new_cost << " of " << to_router_id << " in table of " << rtn.router_id << ". Received from " << src_rtn->router_id << std::endl;
+                if (DEBUG)
+                    std::cout << "Updating new cost to " << src_rtn->cost + new_cost << " of " << to_router_id << " in table of " << rtn.router_id << ". Received from " << src_rtn->router_id << std::endl;
                 rtn.cost = src_rtn->cost + new_cost;
                 rtn.ref_router_id = src_rtn->router_id;
                 has_updated_table = true;
@@ -120,7 +121,8 @@ void NodeRouter::forward_message(Packet &packet) {
 
     int index = -1;
     int ref_router_id = -1;
-    std::cout << "packet destination: " << packet.dest_id << std::endl;
+    if (DEBUG)
+        std::cout << "Packet destination: " << packet.dest_id << ". Source: " << packet.src_id << std::endl;
     for (int i = 0; i < routing_table.size(); i++) {
         RoutingTableNode &rtn = routing_table.at(i);
         if (rtn.is_neighbor) {
@@ -137,7 +139,8 @@ void NodeRouter::forward_message(Packet &packet) {
     }
 
     if (ref_router_id == -1) {
-        std::cout << "can't forward the message, couldn't find the thing in table" << std::endl;
+        if (DEBUG)
+            std::cout << "Can't forward the message, couldn't find distant router " <<  packet.dest_id << " in table." << std::endl;
         return;
     }
 
@@ -152,14 +155,17 @@ void NodeRouter::forward_message(Packet &packet) {
         }
     }
 
-    std::cout << "can't forward the message, couldn't find anything in table" << std::endl;
+    if (DEBUG)
+        std::cout << "DEBUG: Can't forward the message, This shouldn't ever reach." << std::endl;
     return;
 
 goto_forward:
-    std::cout << "forwarding the packet to " << routing_table.at(index).port << std::endl;
+    RoutingTableNode &fwd_rtn = routing_table.at(index);
+    if (DEBUG)
+        std::cout << "Forwarding the packet to neighbor " << fwd_rtn.router_id << " on Port: " << fwd_rtn.port << std::endl;
 
     std::string message = serialize_packet(&packet);
-    connection.send_udp(message, HOME_ADDR, routing_table.at(index).port);
+    connection.send_udp(message, HOME_ADDR, fwd_rtn.port);
 }
 
 /**
@@ -192,7 +198,8 @@ void NodeRouter::handle_packet(Packet &packet, std::string message) {
     if (packet.dest_id != node_id) {
         //message = packet_queue.back().dest_id;
         //message = message + " " + packet_queue.back().message;
-        std::cout << "FORWARDING MESSSAGE" << std::endl;
+        if (DEBUG)
+            std::cout << "Forward Message" << std::endl;
         pthread_mutex_lock(&mutex_routing_table); //TODO move to more approp place.
         forward_message(packet);
         pthread_mutex_unlock(&mutex_routing_table);
@@ -203,9 +210,8 @@ void NodeRouter::handle_packet(Packet &packet, std::string message) {
                 update_dv_in_table(&packet);
                 break;
             case HEADER_FIELD_TYPE_MSG:
-                std::cout << "Final Destination: " << message << std::endl;
-
-                std::cout << "HEADER_FIELD_TYPE_MSG" << std::endl;
+                if (DEBUG)
+                    std::cout << "Final Destination: Source: " << packet.src_id << " Message:" << std::endl << packet.data << std::endl;
                 break;
             default:
                 std::cout << "HEADER_FIELD_TYPE_INVALID" << std::endl;
@@ -238,7 +244,7 @@ void *adv_thread_func(void *args) {
 
                 //packet.data = std::to_string(rtn.router_id);// ...to reach the router
                 packet.data = ((char)rtn.router_id);
-                packet.data.append(std::to_string(rtn.cost)); //cost of link...
+                packet.data += std::to_string(rtn.cost); //cost of link...
                 //std::cout << "sending to " << packet.dest_id << " DATA: " << packet.data << " from " << packet.src_id << std::endl;
 
                 packet.src_id = node->node_id; //this router

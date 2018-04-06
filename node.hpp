@@ -19,6 +19,8 @@
 #define TOPOLOGY_FILE (char*)"topology.dat"
 #define LINELENGTH 20
 
+extern bool DEBUG;
+
 // Queue of data to be routed
 struct Packet {
     char type; //update dv, data etc.
