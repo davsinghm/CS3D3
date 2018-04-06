@@ -160,10 +160,10 @@ void NodeRouter::forward_message(Packet &packet) {
             RoutingTableNode &fwd_rtn = routing_table.at(neighbor_min_cost_i);
 
             if (DEBUG)
-                std::cout << "TODO Couldn't find distant router " <<  packet.dest_id << " in table. Greedily selecting alive neighbor: " << fwd_rtn.router_id << std::endl;
+                std::cout << "Couldn't find distant router " <<  packet.dest_id << " in table. Greedily selecting alive neighbor: " << fwd_rtn.router_id << std::endl;
 
-            //std::string message = serialize_packet(&packet);
-            //connection.send_udp(message, HOME_ADDR, fwd_rtn.port);
+            std::string message = serialize_packet(&packet);
+            connection.send_udp(message, HOME_ADDR, fwd_rtn.port);
             return;
         }
     }
@@ -248,12 +248,13 @@ void *adv_thread_func(void *args) {
 //    std::cout << "started adv thread" << std::endl;
 
     NodeRouter *node = (NodeRouter *)args;
-    bool p_rt = false;
   //  std::cout << "started adv thread: " << node->node_id << std::endl;
 
     //this should send whole routing table to its neighbors
     for (;;) {
         pthread_mutex_lock(&node->mutex_routing_table);
+
+        bool p_rt = false;
 
         for (int i = 0; i < node->routing_table.size(); i++) {
             RoutingTableNode rtn_neighbor = node->routing_table[i];
