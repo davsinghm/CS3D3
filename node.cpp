@@ -108,6 +108,9 @@ void NodeRouter::update_dv_in_table(Packet *packet) {
         routing_table.push_back(rtn);
 
         has_updated_table = true;
+
+        if (DEBUG)
+            std::cout << "Inserting new router " << to_router_id << " in table with cost: " << (src_rtn->cost + new_cost) << ". Received from " << src_rtn->router_id << std::endl;
     }
 
     pthread_mutex_unlock(&mutex_routing_table); //unlock it
@@ -116,11 +119,12 @@ void NodeRouter::update_dv_in_table(Packet *packet) {
         print_routing_table();
 }
 
-//TODO lock the mutex?
 void NodeRouter::forward_message(Packet &packet) {
 
     int index = -1;
     int ref_router_id = -1;
+    int neighbor_min_cost = INT_MAX;
+    int neighbor_min_cost_i = -1; // neighbor's index with min cost to greedy select in case distant router in not in the table.
     if (DEBUG)
         std::cout << "Packet destination: " << packet.dest_id << ". Source: " << packet.src_id << std::endl;
     for (int i = 0; i < routing_table.size(); i++) {
@@ -129,6 +133,11 @@ void NodeRouter::forward_message(Packet &packet) {
             if (rtn.router_id == packet.dest_id) {
                 index = i;
                 goto goto_forward;
+            }
+
+            if (neighbor_min_cost > rtn.cost) {
+                neighbor_min_cost_i = i;
+                neighbor_min_cost = rtn.cost;
             }
         } else {
             if (rtn.router_id == packet.dest_id) {
@@ -139,11 +148,19 @@ void NodeRouter::forward_message(Packet &packet) {
     }
 
     if (ref_router_id == -1) {
-        if (DEBUG)
-            std::cout << "Can't forward the message, couldn't find distant router " <<  packet.dest_id << " in table." << std::endl;
-        return;
+        if (neighbor_min_cost_i != -1) {
+            RoutingTableNode &fwd_rtn = routing_table.at(neighbor_min_cost_i);
+
+            if (DEBUG)
+                std::cout << "Couldn't find distant router " <<  packet.dest_id << " in table. Greedily selecting alive neighbor: " << fwd_rtn.router_id << std::endl;
+
+            std::string message = serialize_packet(&packet);
+            connection.send_udp(message, HOME_ADDR, fwd_rtn.port);
+            return;
+        }
     }
 
+    //TODO convert to function
     for (int i = 0; i < routing_table.size(); i++) {
         RoutingTableNode &rtn = routing_table.at(i);
         if (!rtn.is_neighbor)
