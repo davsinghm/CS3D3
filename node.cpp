@@ -1,24 +1,11 @@
 #include "node.hpp"
 
 NodeRouter::NodeRouter(char node) {
-    // When nodes are intialised, vertices are added
-    //flush_queue();
-    // Set the home router based on the input to the constructor ^
     node_id = node;
-    // Perform Bellman-Ford algorithm on graph
-    //bmf_search(node_id);
     // Build routing table based on above function results on graph
     build_table(TOPOLOGY_FILE);
     // Bind to router's port
     connection.setup_connection(HOME_ADDR, this->port);
-/*
-    for (int i = 0; i < routing_table.size(); i++) {
-        std::cout << routing_table[i].router_id << " "
-                  << routing_table[i].cost << " "
-                  << routing_table[i].port << " "
-                  //<< routing_table[i].next_router_port 
-                  << std::endl;
-    }*/
 
     std::cout << "Initial ";
     print_routing_table();
@@ -78,15 +65,10 @@ void NodeRouter::update_dv_in_table(Packet *packet) {
         if (rtn.router_id == packet->src_id) {
             src_rtn = &rtn;
 
-            //if (std::time(0) - rtn.last_update > SLEEP_SEC + 1 && std::time(0) - rtn.last_update < SLEEP_SEC + 2)
-             //   has_updated_table = true; //if router was dead before
-
             //update the last_update timestamp
             rtn.last_update = std::time(0);
         }
     }
-
-    //std::cout << "new cost to " << to_router_id << " is " << cost_str << " from " << src_rtn->router_id << std::endl;
 
     bool has_node = false; //table has node info, it's updated instead of adding new one
     for (int i = 0; i < routing_table.size(); i++) {
@@ -121,7 +103,7 @@ void NodeRouter::update_dv_in_table(Packet *packet) {
             std::cout << "Inserting new router " << to_router_id << " in table with cost: " << (src_rtn->cost + new_cost) << ". Received from " << src_rtn->router_id << std::endl;
     }
 
-    pthread_mutex_unlock(&mutex_routing_table); //unlock it
+    pthread_mutex_unlock(&mutex_routing_table); //unlock
 
     if (has_updated_table)
         print_routing_table();
@@ -209,20 +191,14 @@ void NodeRouter::handle_packet(Packet &packet, std::string message) {
         std::cerr << "Invalid Packet Received. Message Length(): " << message.length() << std::endl;
         return;
     }
-    //deserialize packet first
+    //deserialize packet
     packet.type = message[0];
     packet.dest_id = message[1];
     packet.src_id = message[2];
     packet.data = message.substr(3);
-    //std::cout << "type: " << packet.type << std::endl;
-    //std::cout << "dest_id: " << packet.dest_id << std::endl;
-    //std::cout << "src_id: " << packet.src_id << std::endl;
-    //std::cout << "data: " << packet.data << std::endl;
 
     //TODO put the forwarding packet in queue and send async from listening/recv thread
     if (packet.dest_id != node_id) {
-        //message = packet_queue.back().dest_id;
-        //message = message + " " + packet_queue.back().message;
         if (DEBUG)
             std::cout << "Forward Message" << std::endl;
         pthread_mutex_lock(&mutex_routing_table); //TODO move to more approp place.
@@ -245,10 +221,7 @@ void NodeRouter::handle_packet(Packet &packet, std::string message) {
 }
 
 void *adv_thread_func(void *args) {
-//    std::cout << "started adv thread" << std::endl;
-
     NodeRouter *node = (NodeRouter *)args;
-  //  std::cout << "started adv thread: " << node->node_id << std::endl;
 
     //this should send whole routing table to its neighbors
     for (;;) {
@@ -269,8 +242,6 @@ void *adv_thread_func(void *args) {
 
             for (int j = 0; j < node->routing_table.size(); j++) {
                 RoutingTableNode &rtn = node->routing_table.at(j);
-                //if (rtn.is_neighbor)
-                //    continue;
 
                 //updates all distant router's cost which were sent through dead neighbor router.
                 if (!rtn.is_neighbor && rtn.ref_router_id == rtn_neighbor.router_id && is_rtn_neighbor_dead) {
@@ -281,16 +252,13 @@ void *adv_thread_func(void *args) {
 
                 Packet packet;
                 packet.type = HEADER_FIELD_TYPE_UPDATE_DV;
-
-                //packet.data = std::to_string(rtn.router_id);// ...to reach the router
-                packet.data = ((char)rtn.router_id);
+                packet.data = ((char)rtn.router_id); // to reach the router...
 
                 //this tells the rtn_neighbor that other neighbor rtn is dead
                 if (rtn.is_neighbor && /*is_dead: */std::time(0) - rtn.last_update > SLEEP_SEC)
                     packet.data += std::to_string(INT_MAX);
                 else
-                    packet.data += std::to_string(rtn.cost); //cost of link...
-                //std::cout << "sending to " << packet.dest_id << " DATA: " << packet.data << " from " << packet.src_id << std::endl;
+                    packet.data += std::to_string(rtn.cost); //...cost of link
 
                 packet.src_id = node->node_id; //this router
                 packet.dest_id = rtn_neighbor.router_id; //neighbor is dest
@@ -325,48 +293,6 @@ std::string NodeRouter::serialize_packet(Packet *packet) {
     return str;
 }
 
-/*bool NodeRouter::add_to_queue(std::string arg) {
-    size_t len = (arg.length() + 1) * sizeof(char);
-    char *packet = (char *)malloc(len);
-    char *message = (char *)malloc(len);
-    char destination;
-    std::string str_port;
-    char port[6];
-
-    strcpy(packet, arg.c_str());
-
-    destination = *(strtok(packet, (char *)" "));
-
-    strcpy(message, strtok(NULL, (char *)"\0"));
-    str_port = std::to_string((int)find_port(destination));
-    strcpy(port, str_port.c_str());
-
-    Packet temp_packet_queue;
-    temp_packet_queue.dest_id = destination;
-    temp_packet_queue.data = message;
-//    strcpy(temp_packet_queue.port, port);
-    packet_queue.push_back(temp_packet_queue);
-
-    free((void *)packet);
-    free((void *)message);
-    return destination != node_id;
-}*/
-
-/*unsigned short NodeRouter::find_port(char arg) {
-    for (int i = 0; i < routing_table.size(); i++) {
-        if (routing_table[i].router == arg) {
-            return routing_table[i].next_router_port;
-        }
-    }
-
-    return 0;
-}*/
-
-//used to find ports of the neighbors nodes while initializing
-/*void NodeRouter::parse_file(char *filename) {
-
-}
-*/
 //build initial table with known neighbors
 void NodeRouter::build_table(char *filename) {
     char input[LINELENGTH];
@@ -423,54 +349,4 @@ void NodeRouter::build_table(char *filename) {
     }
 
     fclose(input_file);
-
-    /*RoutingTableNode temp_routing_table;
-
-    // Add this node as first entry to table
-    temp_routing_table.cost = -1; //-1 means not set
-    temp_routing_table.router_id = node_id;
-//    temp_routing_table.next_router = node_id;
-    routing_table.push_back(temp_routing_table);
-
-    // Search through rest of the table
-    for (int i = 0; i < node_list.size(); i++) {
-        // Skip the the home router since this was already added
-        if (node_list[i].router == node_id) {
-            continue;
-        }
-        // If the router is a neighbour
-        else if (node_list[node_list[i].prev].router == node_id) {
-            temp_routing_table.cost = node_list[i].dist_start;
-            temp_routing_table.router = node_list[i].router;
-            temp_routing_table.next_router = node_list[i].router;
-            temp_routing_table.next_router_port = node_list[i].port;
-            routing_table.push_back(temp_routing_table);
-        }
-        // If the router is distant
-        else {
-            temp_routing_table.cost = node_list[i].dist_start;
-            temp_routing_table.router = node_list[i].router;
-            temp_routing_table.next_router = find_next_router(i);
-            temp_routing_table.next_router_port =
-                node_list[find_location(temp_routing_table.next_router)].port;
-            routing_table.push_back(temp_routing_table);
-        }
-    }*/
 }
-
-/*char NodeRouter::find_next_router(int l) {
-    int count = 0;
-    while (count < SEARCH_LIM) {
-        if (node_list[node_list[l].prev].router == node_id) {
-            return node_list[l].router;
-        } else {
-            l = node_list[l].prev;
-        }
-        count++;
-    }
-
-    std::cout << "Error: find_next_router()\n";
-    exit(1);
-
-    return '\0';
-}*/
