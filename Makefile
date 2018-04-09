@@ -3,12 +3,12 @@ CXXFLAGS = -pthread -std=c++11
 
 #BEGIN
 COMPILE = my-router.o node.o connection.o 
-main: $(COMPILE)
+my-router: $(COMPILE)
 	$(CXX) $(COMPILE) -o my-router
 
-MAIN = my-router.cpp
-main.o: $(MAIN)
-	$(CXX) $(CXXFLAGS) $(MAIN) -c my-router.cpp
+MY-ROUTER = my-router.cpp
+my-router.o: $(MY-ROUTER)
+	$(CXX) $(CXXFLAGS) $(MY-ROUTER) -c my-router.cpp
 
 CONNECTION = connection.cpp connection.hpp
 connection.o: $(CONNECTION)
@@ -17,7 +17,6 @@ connection.o: $(CONNECTION)
 NODE = node.cpp node.hpp
 node.o: $(NODE)
 	$(CXX) $(CXXFLAGS) $(NODE) -c node.cpp
-
 
 #CLEAN UP
 clean:
