@@ -13,33 +13,17 @@ void run_injecter() {
 
     connection.setup_connection((char *)"127.0.0.1", NODE_H_PORT);
 
-//    for (;;) {
-        //std::cout << "Sending message.";
+    //TODO use struct Packet and serialize methods from NodeRouter.
+    buffer = "2";
+    std::cout << "Enter node destination: " << std::endl;
+    std::cin >> node_dest;
+    buffer += node_dest;
+    buffer += "HThe quick brown fox jumps over the lazy dog.";
+    buffer += " on ";
+    buffer += std::to_string(std::time(0));
 
-        //std::cout << "Enter message followed by $: ";
-        buffer = "2"; //TODO use struct Packet.
-        std::cout << "Enter node destination: " << std::endl;
-        std::cin >> node_dest;
-        buffer += node_dest;
-        buffer += "HThe quick brown fox jumps over the lazy dog.";
-        buffer += " on ";
-        buffer += std::to_string(std::time(0));
-        /*temp = "";
-        while (temp != "$") {
-            std::cin >> temp;
-            buffer = buffer + temp + " ";
-        }*/
-//        std::cout << "Enter server: ";
-//        std::cin >> server;
-//        server = server + buffer + " ";
-
-       // std::cout << "Enter port: ";
-       // std::cin >> port;
-
-        connection.send_udp(buffer.c_str(), (char *)"127.0.0.1",
-                            port.c_str());
-        exit(0);
-   // }
+    connection.send_udp(buffer.c_str(), (char *)"127.0.0.1", port.c_str());
+    exit(0);
 }
 
 int main(int argc, char *argv[]) {
