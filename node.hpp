@@ -34,12 +34,15 @@ typedef struct Packet Packet;
 struct RoutingTableNode {
     bool is_neighbor;
     char router_id;
-    unsigned int cost;
+    unsigned int cost; //cost of neighbor
     unsigned int port;
-    char ref_router_id; //id of neighbor router through this distant node has min cost.
+    unsigned int ref_cost; //cost if sending through some other node
+    char ref_router_id; //id of neighbor router through this distant node has min cost
     //char next_router;
     //unsigned short next_router_port;
     long last_update; //timestamp of when last DV update came from neighbor. used for checking if it's alive
+
+    bool is_dead; //used for debug printing only
 };
 
 typedef struct RoutingTableNode RoutingTableNode;
@@ -71,6 +74,10 @@ class NodeRouter {
 
     pthread_mutex_t mutex_routing_table = PTHREAD_MUTEX_INITIALIZER;
     std::vector<RoutingTableNode> routing_table;
+
+    unsigned int get_link_cost(RoutingTableNode &router);
+    RoutingTableNode *get_router_by_id(char id);
+    bool is_router_dead(RoutingTableNode &router);
 
     void print_routing_table();
     std::string serialize_packet(Packet *);

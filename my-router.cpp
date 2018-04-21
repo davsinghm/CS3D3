@@ -19,7 +19,7 @@ void run_injecter() {
     std::cin >> node_dest;
     buffer += node_dest;
     buffer += "HThe quick brown fox jumps over the lazy dog.";
-    buffer += " on ";
+    buffer += "\nTimestamp: ";
     buffer += std::to_string(std::time(0));
 
     connection.send_udp(buffer.c_str(), (char *)"127.0.0.1", port.c_str());

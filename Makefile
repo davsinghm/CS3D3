@@ -2,7 +2,7 @@ CXX = clang++
 CXXFLAGS = -pthread -std=c++11
 
 #BEGIN
-COMPILE = my-router.o node.o connection.o 
+COMPILE = my-router.o node.o connection.o
 my-router: $(COMPILE)
 	$(CXX) $(COMPILE) -o my-router
 
