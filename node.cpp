@@ -170,6 +170,13 @@ void Router::forward_message(Packet &packet) {
         return;
     }
 
+    if (is_router_dead(*fwd_router)) {
+        std::cout << "Couldn't forward packet. Neighbor "
+                  << fwd_router->router_id << " is dead. Packet dropped."
+                  << std::endl;
+        return;
+    }
+
     std::cout << "Forwarding the packet to neighbor " << fwd_router->router_id
               << " on Port: " << fwd_router->port << std::endl;
 
