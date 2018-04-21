@@ -121,68 +121,31 @@ void NodeRouter::forward_message(Packet &packet) {
 
     int index = -1;
     int ref_router_id = -1;
-    int neighbor_min_cost = INT_MAX;
-    int neighbor_min_cost_i = -1; // neighbor's index with min cost to greedy select in case distant router in not in the table.
 
     if (DEBUG)
         std::cout << "Packet destination: " << packet.dest_id << ". Source: " << packet.src_id << std::endl;
 
-    for (int i = 0; i < routing_table.size(); i++) {
-        RoutingTableNode &rtn = routing_table.at(i);
-        if (rtn.is_neighbor) {
-            if (rtn.router_id == packet.dest_id) {
-                index = i;
-                goto goto_forward;
-            }
+    RoutingTableNode *fwd_router = get_router_by_id(packet.dest_id);
+    if (fwd_router == NULL) {
+        if (DEBUG) std::cout << "Couldn't find router " <<  packet.dest_id << " in table. Packet dropped." << std::endl;
+        return;
+    }
 
-            if (neighbor_min_cost > rtn.cost && (std::time(0) - rtn.last_update) <= SLEEP_SEC) {
-                neighbor_min_cost_i = i;
-                neighbor_min_cost = rtn.cost;
-            }
-        } else {
-            if (rtn.router_id == packet.dest_id) {
-                ref_router_id = rtn.ref_router_id;
-                break;
-            }
+    if (fwd_router != NULL) {
+        if (!fwd_router->is_neighbor) {
+            fwd_router = get_router_by_id(fwd_router->ref_router_id);
         }
     }
 
-    if (ref_router_id == -1) {
-        if (neighbor_min_cost_i != -1) {
-            RoutingTableNode &fwd_rtn = routing_table.at(neighbor_min_cost_i);
-
-            if (DEBUG)
-                std::cout << "Couldn't find distant router " <<  packet.dest_id << " in table. Greedily selecting alive neighbor: " << fwd_rtn.router_id << std::endl;
-
-            std::string message = serialize_packet(&packet);
-            connection.send_udp(message, HOME_ADDR, fwd_rtn.port);
-            return;
-        }
+    if (fwd_router == NULL) {
+        if (DEBUG) std::cout << "Couldn't find ref router for " <<  packet.dest_id << " in table. Packet dropped." << std::endl;
+        return;
     }
 
-    //TODO convert to function
-    for (int i = 0; i < routing_table.size(); i++) {
-        RoutingTableNode &rtn = routing_table.at(i);
-        if (!rtn.is_neighbor)
-            continue;
-
-        if (rtn.router_id == ref_router_id) {
-            index = i;
-            goto goto_forward;
-        }
-    }
-
-    if (DEBUG)
-        std::cout << "DEBUG: Can't forward the message. No alive neighbor found. Packet dropped." << std::endl;
-    return;
-
-goto_forward:
-    RoutingTableNode &fwd_rtn = routing_table.at(index);
-
-    std::cout << "Forwarding the packet to neighbor " << fwd_rtn.router_id << " on Port: " << fwd_rtn.port << std::endl;
+    std::cout << "Forwarding the packet to neighbor " << fwd_router->router_id << " on Port: " << fwd_router->port << std::endl;
 
     std::string message = serialize_packet(&packet);
-    connection.send_udp(message, HOME_ADDR, fwd_rtn.port);
+    connection.send_udp(message, HOME_ADDR, fwd_router->port);
 }
 
 /**
