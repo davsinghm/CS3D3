@@ -372,9 +372,8 @@ void NodeRouter::build_table(char *filename) {
 
     char router;
     char edge;
-    unsigned short port;
+    unsigned int port;
     unsigned int weight;
-    char token[128];
 
     input_file = fopen(filename, "r");
 
@@ -383,26 +382,11 @@ void NodeRouter::build_table(char *filename) {
     } else {
         while (!feof(input_file)) {
             fgets(input, LINELENGTH, (FILE *)input_file);
-            for (int i = 0; i < 4; i++) {
-                switch (i) {
-                case 0:
-                    strcpy(token, strtok(input, (char *)","));
-                    router = token[0];
-                    break;
-                case 1:
-                    strcpy(token, strtok(NULL, (char *)","));
-                    edge = token[0];
-                    break;
-                case 2:
-                    strcpy(token, strtok(NULL, (char *)","));
-                    port = (unsigned short)atoi(token);
-                    break;
-                case 3:
-                    strcpy(token, strtok(NULL, (char *)"\n"));
-                    weight = (unsigned int)atoi(token);
-                    break;
-                }
-            }
+            router = strtok(input, (char *)",")[0];
+            edge = strtok(NULL, (char *)",")[0];
+            port = (unsigned int)atoi(strtok(NULL, (char *)","));
+            weight = (unsigned int)atoi(strtok(NULL, (char *)"\n"));
+
             if (router != node_id) {
                 if (edge == node_id)
                     this->port = port;
